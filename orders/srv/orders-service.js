@@ -25,6 +25,18 @@ class OrdersService extends cds.ApplicationService {
 
     return super.init()
   }
+  
+  
+    this.before ('DELETE', 'Orders1', async function(req) {
+      const { ID } = req.data
+      const Items = await cds.tx(req).run (
+        SELECT.from (OrderItems1, oi => { oi.product_ID, oi.quantity }) .where ({up__ID:ID})
+      )
+      if (Items) await Promise.all (Items.map(it => this.orderChanged (it.product_ID, -it.quantity)))
+    })
+
+    return super.init()
+  }
 
   /** order changed -> broadcast event */
   orderChanged (product, deltaQuantity) {
